@@ -8,8 +8,8 @@ import {
   NgZone,
   Output,
   ViewChild,
-} from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+} from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 
 /** Logged in user data */
 interface User {
@@ -22,7 +22,7 @@ interface User {
   hash: string;
 }
 
-type LOGIN_BUTTON_SIZE = 'medium' | 'large' | 'small';
+type LOGIN_BUTTON_SIZE = "medium" | "large" | "small";
 
 /** Configuration for a login button */
 interface WidgetConfiguration {
@@ -40,17 +40,17 @@ const TELEGRAM_WIDGET_VERSION = 21;
 const randomSeed = parseInt(`${Math.random() * 1e7}`);
 
 @Component({
-  selector: 'angular-telegram-login-widget',
+  selector: "angular-telegram-login-widget",
   template: `<div #scriptContainer></div>`,
 })
 export class ProductListComponent implements AfterViewInit {
-  @ViewChild('scriptContainer', { static: true }) scriptContainer: ElementRef;
+  @ViewChild("scriptContainer", { static: true }) scriptContainer: ElementRef;
 
   @Output() login: EventEmitter<User> = new EventEmitter<User>();
   @Output() load: EventEmitter<void> = new EventEmitter<void>();
   @Output() loadError: EventEmitter<void> = new EventEmitter<void>();
 
-  @Input() botName: string = 'TEST';
+  @Input() botName: string = "botfather321321bot";
   @Input() config?: WidgetConfiguration = {};
 
   private readonly window: Window;
@@ -58,7 +58,7 @@ export class ProductListComponent implements AfterViewInit {
 
   private defaultConfigs = {
     src: `https://telegram.org/js/telegram-widget.js?${TELEGRAM_WIDGET_VERSION}`,
-    'data-onauth': `onTelegramLogin${randomSeed}(user)`,
+    "data-onauth": `onTelegramLogin${randomSeed}(user)`,
     onerror: `onTelegramWidgetLoadFail${randomSeed}()`,
     onload: `onTelegramWidgetLoad${randomSeed}()`,
   };
@@ -70,7 +70,7 @@ export class ProductListComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     const scriptAttrs = this.compileConfigs();
-    const script = this.document.createElement('script');
+    const script = this.document.createElement("script");
 
     for (let key in scriptAttrs) {
       if (scriptAttrs.hasOwnProperty(key)) {
@@ -78,14 +78,14 @@ export class ProductListComponent implements AfterViewInit {
       }
     }
 
-    this.window['onTelegramLogin' + randomSeed] = (data) =>
+    this.window["onTelegramLogin" + randomSeed] = (data) =>
       this.ngZone.run(() => this.login.emit(data));
-    this.window['onTelegramWidgetLoad' + randomSeed] = () =>
+    this.window["onTelegramWidgetLoad" + randomSeed] = () =>
       this.ngZone.run(() => this.load.emit());
-    this.window['onTelegramWidgetLoadFail' + randomSeed] = () =>
+    this.window["onTelegramWidgetLoadFail" + randomSeed] = () =>
       this.ngZone.run(() => this.loadError.emit());
 
-    this.scriptContainer.nativeElement.innerHTML = '';
+    this.scriptContainer.nativeElement.innerHTML = "";
     this.scriptContainer.nativeElement.appendChild(script);
   }
 
@@ -93,27 +93,27 @@ export class ProductListComponent implements AfterViewInit {
     const configs = this.defaultConfigs ?? {};
 
     if (!this.botName) {
-      throw new Error('Telegram widget: bot name not present!');
+      throw new Error("Telegram widget: bot name not present!");
     }
 
-    configs['data-telegram-login'] = this.botName;
+    configs["data-telegram-login"] = this.botName;
 
     if (this.config?.accessToWriteMessages) {
-      configs['data-request-access'] = 'write';
+      configs["data-request-access"] = "write";
     }
 
     if (this.config?.cornerRadius) {
-      configs['data-radius'] = `${this.config.cornerRadius}`;
+      configs["data-radius"] = `${this.config.cornerRadius}`;
     }
 
     if (this.config?.showUserPhoto === false) {
-      configs['data-userpic'] = 'false';
+      configs["data-userpic"] = "false";
     }
 
     if (this.config?.buttonStyle) {
-      configs['data-size'] = this.config.buttonStyle;
+      configs["data-size"] = this.config.buttonStyle;
     } else {
-      configs['data-size'] = 'large';
+      configs["data-size"] = "large";
     }
 
     return configs;
