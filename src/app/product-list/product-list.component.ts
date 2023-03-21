@@ -3,9 +3,11 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostListener,
   Inject,
-  Input,
   NgZone,
+  OnDestroy,
+  OnInit,
   Output,
   ViewChild,
 } from "@angular/core";
@@ -37,31 +39,42 @@ interface WidgetConfiguration {
 }
 
 const TELEGRAM_WIDGET_VERSION = 21;
-const randomSeed = parseInt(`${Math.random() * 1e7}`);
 
 @Component({
-  selector: "angular-telegram-login-widget",
-  template: `<div #scriptContainer></div>`,
+  selector: "bet-bez-telegram-login-btn",
+  styleUrls: ["./product-list.component.css"],
+  template: "<div #scriptContainer></div>",
 })
-export class ProductListComponent implements AfterViewInit {
-  @ViewChild("scriptContainer", { static: true }) scriptContainer: ElementRef;
+export class ProductListComponent implements AfterViewInit, OnDestroy {
+  @ViewChild("scriptContainer", { static: true }) scriptContainer:
+    | ElementRef
+    | undefined;
 
   @Output() login: EventEmitter<User> = new EventEmitter<User>();
-  @Output() load: EventEmitter<void> = new EventEmitter<void>();
+  @Output() loaded: EventEmitter<void> = new EventEmitter<void>();
   @Output() loadError: EventEmitter<void> = new EventEmitter<void>();
 
-  @Input() botName: string = "botfather321321bot";
-  @Input() config?: WidgetConfiguration = {};
+  private _botName = "botfather321321bot";
+  private _config?: WidgetConfiguration = {
+    showUserPhoto: true,
+    accessToWriteMessages: true,
+  };
 
-  private readonly window: Window;
+  private readonly window: any;
   private readonly document: Document;
 
   private defaultConfigs = {
     src: `https://telegram.org/js/telegram-widget.js?${TELEGRAM_WIDGET_VERSION}`,
-    "data-onauth": `onTelegramLogin${randomSeed}(user)`,
-    onerror: `onTelegramWidgetLoadFail${randomSeed}()`,
-    onload: `onTelegramWidgetLoad${randomSeed}()`,
+    "data-onauth": `onTelegramLogin(user)`,
+    onerror: `onTelegramWidgetLoadFail()`,
+    onload: `onTelegramWidgetLoad()`,
   };
+  script: HTMLScriptElement | undefined;
+
+  @HostListener("window:data-onauth", ["$event"])
+  loginAuth(event: any) {
+    console.log(event);
+  }
 
   constructor(private ngZone: NgZone, @Inject(DOCUMENT) document: any) {
     this.window = window;
@@ -69,49 +82,53 @@ export class ProductListComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
-    const scriptAttrs = this.compileConfigs();
-    const script = this.document.createElement("script");
+    const scriptAttrs: any = this._compileConfigs();
+    this.script = this.document.createElement("script");
 
-    for (let key in scriptAttrs) {
-      if (scriptAttrs.hasOwnProperty(key)) {
-        script.setAttribute(key, scriptAttrs[key]);
+    for (const key in scriptAttrs) {
+      console.log(key, scriptAttrs[key]);
+      if (scriptAttrs[key]) {
+        this.script.setAttribute(key, scriptAttrs[key]);
       }
     }
 
-    this.window["onTelegramLogin" + randomSeed] = (data) =>
-      this.ngZone.run(() => this.login.emit(data));
-    this.window["onTelegramWidgetLoad" + randomSeed] = () =>
-      this.ngZone.run(() => this.load.emit());
-    this.window["onTelegramWidgetLoadFail" + randomSeed] = () =>
-      this.ngZone.run(() => this.loadError.emit());
-
-    this.scriptContainer.nativeElement.innerHTML = "";
-    this.scriptContainer.nativeElement.appendChild(script);
+    if (this.scriptContainer) this.scriptContainer.nativeElement.innerHTML = "";
+    this.scriptContainer?.nativeElement.appendChild(this.script);
+    console.log(this.script);
+    console.log(this.window["onTelegramLogin"]);
   }
 
-  private compileConfigs(): object {
-    const configs = this.defaultConfigs ?? {};
+  ngOnDestroy() {
+    if (this.script) {
+      this.script.remove();
+    }
+  }
 
-    if (!this.botName) {
+  private _compileConfigs(): object {
+    const configs: any = this.defaultConfigs ?? {};
+
+    if (!this._botName) {
       throw new Error("Telegram widget: bot name not present!");
     }
 
-    configs["data-telegram-login"] = this.botName;
+    configs.async = true;
 
-    if (this.config?.accessToWriteMessages) {
+    configs["data-telegram-login"] = this._botName;
+
+    if (this._config?.accessToWriteMessages) {
       configs["data-request-access"] = "write";
     }
 
-    if (this.config?.cornerRadius) {
-      configs["data-radius"] = `${this.config.cornerRadius}`;
+    if (this._config?.cornerRadius) {
+      configs["data-radius"] = `${this._config.cornerRadius}`;
     }
 
-    if (this.config?.showUserPhoto === false) {
+    if (this._config?.showUserPhoto === false) {
       configs["data-userpic"] = "false";
     }
 
-    if (this.config?.buttonStyle) {
-      configs["data-size"] = this.config.buttonStyle;
+    if (this._config?.buttonStyle) {
+      configs["data-size"] = this._config.buttonStyle;
     } else {
       configs["data-size"] = "large";
     }
