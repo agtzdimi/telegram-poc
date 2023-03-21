@@ -45,7 +45,7 @@ const TELEGRAM_WIDGET_VERSION = 21;
   styleUrls: ["./product-list.component.css"],
   template: "<div #scriptContainer></div>",
 })
-export class ProductListComponent implements AfterViewInit, OnDestroy {
+export class ProductListComponent implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild("scriptContainer", { static: true }) scriptContainer:
     | ElementRef
     | undefined;
@@ -81,6 +81,26 @@ export class ProductListComponent implements AfterViewInit, OnDestroy {
     this.document = document as Document;
   }
 
+  ngOnInit() {
+    this.window["onTelegramLogin"] = (data: User | undefined) => {
+      console.log(data);
+      this.ngZone.run(() => {
+        console.log(data);
+        this.login.emit(data);
+      });
+    };
+    this.window["onTelegramWidgetLoad"] = () =>
+      this.ngZone.run(() => {
+        console.log("EE");
+        this.loaded.emit();
+      });
+    this.window["onTelegramWidgetLoadFail"] = () =>
+      this.ngZone.run(() => {
+        console.log("AA");
+        this.loadError.emit();
+      });
+  }
+
   ngAfterViewInit() {
     const scriptAttrs: any = this._compileConfigs();
     this.script = this.document.createElement("script");
@@ -91,6 +111,8 @@ export class ProductListComponent implements AfterViewInit, OnDestroy {
         this.script.setAttribute(key, scriptAttrs[key]);
       }
     }
+
+    this.script.setAttribute("async", "");
 
     if (this.scriptContainer) this.scriptContainer.nativeElement.innerHTML = "";
     this.scriptContainer?.nativeElement.appendChild(this.script);
@@ -110,8 +132,6 @@ export class ProductListComponent implements AfterViewInit, OnDestroy {
     if (!this._botName) {
       throw new Error("Telegram widget: bot name not present!");
     }
-
-    configs.async = true;
 
     configs["data-telegram-login"] = this._botName;
 
